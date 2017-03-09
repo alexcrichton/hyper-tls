@@ -1,9 +1,11 @@
 use std::fmt;
 use std::io::{self, Read, Write};
 
-use futures::Async;
+use futures::{Poll, Async};
+#[allow(deprecated)]
 use tokio_core::io::Io;
 use tokio_core::net::TcpStream;
+use tokio_io::{AsyncRead, AsyncWrite};
 use tokio_tls::TlsStream;
 
 /// A stream that might be protected with TLS.
@@ -51,6 +53,7 @@ impl Write for MaybeHttpsStream {
     }
 }
 
+#[allow(deprecated)]
 impl Io for MaybeHttpsStream {
     #[inline]
     fn poll_read(&mut self) -> Async<()> {
@@ -65,6 +68,18 @@ impl Io for MaybeHttpsStream {
         match *self {
             MaybeHttpsStream::Http(ref mut s) => s.poll_write(),
             MaybeHttpsStream::Https(ref mut s) => s.poll_write(),
+        }
+    }
+}
+
+impl AsyncRead for MaybeHttpsStream {
+}
+
+impl AsyncWrite for MaybeHttpsStream {
+    fn shutdown(&mut self) -> Poll<(), io::Error> {
+        match *self {
+            MaybeHttpsStream::Http(ref mut s) => s.shutdown(),
+            MaybeHttpsStream::Https(ref mut s) => s.shutdown(),
         }
     }
 }
